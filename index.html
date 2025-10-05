@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Exoplanetas</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top, #0b0f2b, #000);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      width: 100vw;
+      background-image: url(./bg_video.mp4);
+    }
+
+#bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+      z-index: -1; 
+    }
+    
+
+    
+
+   
+
+    .chat-container {
+      background: rgba(255, 255, 255, 0.1);
+      width: 100%;
+      max-width: 400px;
+      height: 600px;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      background-image: url(./amusa_bg.jpg);
+      font-family: "Pixelify Sans", sans-serif;
+    }
+
+  .send-btn, .user-input {
+    font-family: "Pixelify Sans", sans-serif;
+  }
+
+
+    .chat-header {
+      text-align: center;
+      padding: 15px;
+      background: #1b1e4b;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      padding: 10px 14px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user {
+      background: #3b82f6;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #4b5563;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #333;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      outline: none;
+      background: #111;
+      color: #fff;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #3b82f6;
+      border: none;
+      cursor: pointer;
+      color: white;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    button:disabled {
+      background: #1e3a8a;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+
+
+    .loading {
+      background: #4b5563;
+      padding: 10px 14px;
+      border-radius: 10px;
+      max-width: 80%;
+      align-self: flex-start;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3b82f6;
+      margin: 0 2px;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
+      }
+
+      40% {
+        transform: scale(1);
+      }
+    }
+
+    .info {
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+      padding: 5px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <video autoplay muted loop preload="auto" id="bg-video">
+    <source src="./bg_video.mp4" type="video/mp4">
+    Seu navegador não suporta vídeo em HTML5.
+  </video>
+
+  <div class="chat-container">
+    <div class="chat-header">Talk to Amusa</div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="message bot">
+        Hello there! My name is Amusa, i'm an exoplanet specialist. ask me anything about planets from outside of our
+        solar system! 
+      </div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="user-input" class="user-input"  placeholder="Ask something about Exoplanets">
+      <button onclick="sendMessage()" id="send-btn" class="send-btn">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+
+
+    const messagesContainer = document.getElementById("chat-messages");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+
+    const API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
+
+
+    const respostasLocais = {
+      "what is an exoplanet": "An exoplanet is a planet orbiting a star outside our Solar System.",
+"how many exoplanets": "Currently, more than 5,000 exoplanets have been confirmed!",
+"how we discover exoplanets": "Most are discovered by methods such as transit (when the planet passes in front of the star) and radial velocity.",
+"example of an exoplanet": "One example is Kepler-22b, which is in the habitable zone of its star.",
+"habitable zone": "It is the region around a star where conditions allow the existence of liquid water—essential for life as we know it.",
+"is there life on exoplanets": "We haven't yet found life outside of Earth, but some exoplanets have conditions that could allow it.",
+"first exoplanet": "The first confirmed exoplanet was discovered in 1995 by Michel Mayor and Didier Queloz, orbiting the star 51 Pegasi.",
+"kepler": "Kepler was a NASA space telescope used to search for Earth-like planets around other stars."
+    };
+
+   
+    function addMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.textContent = text;
+      messagesContainer.appendChild(msg);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    
+    function showLoading() {
+      const loading = document.createElement("div");
+      loading.classList.add("loading");
+      loading.id = "loading";
+      loading.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+      messagesContainer.appendChild(loading);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function removeLoading() {
+      const loading = document.getElementById("loading");
+      if (loading) loading.remove();
+    }
+
+    
+    function getLocalResponse(text) {
+      const textLower = text.toLowerCase();
+      for (let chave in respostasLocais) {
+        if (textLower.includes(chave)) {
+          return respostasLocais[chave];
+        }
+      }
+      return null;
+    }
+
+   
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      const userMessage = text;
+      userInput.value = "";
+      sendBtn.disabled = true;
+
+      
+      const localResponse = getLocalResponse(userMessage);
+      if (localResponse) {
+        setTimeout(() => {
+          addMessage(localResponse, "bot");
+          sendBtn.disabled = false;
+        }, 400);
+        return;
+      }
+
+      
+      showLoading();
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            inputs: userMessage,
+            parameters: {
+              max_length: 150,
+              temperature: 0.7,
+              top_p: 0.9
+            }
+          })
+        });
+
+        const data = await response.json();
+        removeLoading();
+
+        if (data.error) {
+          addMessage('Sorry, the API is busy. Please try again in a few seconds or ask a question about exoplanets! 🌟', "bot");
+        } else if (data[0] && data[0].generated_text) {
+          addMessage(data[0].generated_text, "bot");
+        } else {
+          addMessage('Hmm... I did not quite understand. Can you rephrase your question about exoplanets? 🪐', "bot");
+        }
+      } catch (error) {
+        removeLoading();
+        addMessage('Error connecting to API. Ask something specific about exoplanets to use local base! 🌌', "bot");
+        console.error('Error:', error);
+      }
+
+      sendBtn.disabled = false;
+      userInput.focus();
+    }
+
+    
+    userInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+ 
+    userInput.focus();
+  </script>
+
+</body>
+
+</html>
